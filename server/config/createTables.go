@@ -12,64 +12,83 @@ const (
 	EmailVerificationTokensTable = "email_verification_tokens"
 )
 
+// Table definition struct
+type TableDefinition struct {
+	Name  string
+	Query string
+}
+
 // Create all application tables
 func CreateTables() {
-	tables := map[string]string{
-		UsersTable: `
-			CREATE TABLE IF NOT EXISTS %s (
-				id SERIAL PRIMARY KEY,
-				name VARCHAR(255) NOT NULL,
-				last_name VARCHAR(255) NOT NULL,
-				email VARCHAR(255) UNIQUE NOT NULL,
-				password_hash VARCHAR(255) NOT NULL,
-				auth_provider VARCHAR(50) DEFAULT 'JWT',
-				email_verified BOOLEAN DEFAULT FALSE,
-				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-			);
-		`,
-		RefreshTokensTable: `
-			CREATE TABLE IF NOT EXISTS %s (
-				id SERIAL PRIMARY KEY,
-				user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-				token_hash VARCHAR(255) NOT NULL,
-				expires_at TIMESTAMP NOT NULL,
-				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-				is_revoked BOOLEAN DEFAULT FALSE,
-				device_info VARCHAR(255),
-				ip_address INET
-			)
-		`,
-		PasswordResetTokensTable: `
-			CREATE TABLE IF NOT EXISTS %s (
-				id SERIAL PRIMARY KEY,
-				user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-				token_hash VARCHAR(255) NOT NULL,
-				used BOOLEAN DEFAULT FALSE,
-				expires_at TIMESTAMP NOT NULL,
-				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-			);
-		`,
-		EmailVerificationTokensTable: `
-      CREATE TABLE IF NOT EXISTS %s (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        verification_code VARCHAR(6) NOT NULL,
-        attempts INTEGER DEFAULT 0,
-        success BOOLEAN DEFAULT FALSE,
-        expires_at TIMESTAMP NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `,
+	tables := []TableDefinition{
+		{
+			Name: UsersTable,
+			Query: `
+				CREATE TABLE IF NOT EXISTS %s (
+					id SERIAL PRIMARY KEY,
+					name VARCHAR(255) NOT NULL,
+					last_name VARCHAR(255) NOT NULL,
+					email VARCHAR(255) UNIQUE NOT NULL,
+					password_hash VARCHAR(255) NOT NULL,
+					auth_provider VARCHAR(50) DEFAULT 'JWT',
+					email_verified BOOLEAN DEFAULT FALSE,
+					created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+					updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+				);
+			`,
+		},
+		{
+			Name: RefreshTokensTable,
+			Query: `
+				CREATE TABLE IF NOT EXISTS %s (
+					id SERIAL PRIMARY KEY,
+					user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+					token_hash VARCHAR(255) NOT NULL,
+					expires_at TIMESTAMP NOT NULL,
+					created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+					is_revoked BOOLEAN DEFAULT FALSE,
+					device_info VARCHAR(255),
+					ip_address INET
+				)
+			`,
+		},
+		{
+			Name: PasswordResetTokensTable,
+			Query: `
+				CREATE TABLE IF NOT EXISTS %s (
+					id SERIAL PRIMARY KEY,
+					user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+					token_hash VARCHAR(255) NOT NULL,
+					used BOOLEAN DEFAULT FALSE,
+					expires_at TIMESTAMP NOT NULL,
+					created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+				);
+			`,
+		},
+		{
+			Name: EmailVerificationTokensTable,
+			Query: `
+				CREATE TABLE IF NOT EXISTS %s (
+					id SERIAL PRIMARY KEY,
+					user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+					verification_code VARCHAR(6) NOT NULL,
+					attempts INTEGER DEFAULT 0,
+					success BOOLEAN DEFAULT FALSE,
+					expires_at TIMESTAMP NOT NULL,
+					created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+				);
+			`,
+		},
 	}
 
-	// Loop through tables map and conditionally create non-existent tables
-	for tableName, createQuery := range tables {
-		if tableExists(tableName) {
+	// Loop through tables map in order and conditionally
+	// create non-existent tables
+	for _, table := range tables {
+		if tableExists(table.Name) {
 			continue
 		}
 
-		createTable(tableName, createQuery)
+		createTable(table.Name, table.Query)
 	}
 }
 
